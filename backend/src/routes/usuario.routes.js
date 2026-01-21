@@ -1,330 +1,175 @@
+// usuario.routes.js
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const db = require('../db');
 
-// Middleware para verificar token
-const verificarToken = (req, res, next) => {
-    const token = req.headers['x-access-token'] || req.headers['authorization'];
+// Middleware para verificar token JWT
+const verifyToken = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
     
     if (!token) {
-        return res.status(401).json({ message: 'Acceso denegado. Token no proporcionado.' });
+        return res.status(403).json({ error: 'Token no proporcionado' });
     }
     
     try {
-        // Remover el prefijo 'Bearer ' si existe
-        const tokenValue = token.startsWith('Bearer ') ? token.slice(7) : token;
-        const decoded = jwt.verify(tokenValue, process.env.JWT_SECRET);
-        req.usuario = decoded;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tu_secreto_jwt');
+        req.user = decoded;
         next();
     } catch (error) {
-        return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
+        return res.status(401).json({ error: 'Token inválido o expirado' });
     }
 };
 
-// Obtener todos los usuarios (protegido por token y solo para admins)
-router.get('/', verificarToken, (req, res) => {
-    // Verificar si el usuario es admin
-    if (req.usuario.rol !== 'admin') {
-        return res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
+// Middleware para verificar rol admin
+const verifyAdmin = (req, res, next) => {
+    if (req.user.rol !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado. Se requiere rol admin' });
     }
-    
-    db.query('SELECT idUsuario, nombre, email, rol FROM Usuario', (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        res.json(results);
+    next();
+};
+
+// Iniciar sesión (para admin y cliente)
+router.post('/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email y password son requeridos' });
+  }
+
+  const query = 'SELECT * FROM usuario WHERE email = ?';
+
+  db.query(query, [email], async (error, usuarios) => {
+    if (error) {
+      console.error('Error DB:', error);
+      return res.status(500).json({ error: 'Error en base de datos' });
+    }
+
+    if (usuarios.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const usuario = usuarios[0];
+
+    const passwordValido = await bcrypt.compare(password, usuario.password);
+    if (!passwordValido) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const token = jwt.sign(
+      {
+        id: usuario.id,
+        email: usuario.email,
+        rol: usuario.rol,
+        nombre: usuario.nombre
+      },
+      process.env.JWT_SECRET || 'tu_secreto_jwt',
+      { expiresIn: '8h' }
+    );
+
+    const { password: _, ...usuarioSinPassword } = usuario;
+
+    res.json({
+      token,
+      usuario: usuarioSinPassword
     });
+  });
 });
 
-// Registrar nuevo usuario (solo admins pueden crear usuarios)
-router.post('/', verificarToken, async (req, res) => {
-    // Verificar si el usuario es admin
-    if (req.usuario.rol !== 'admin') {
-        return res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
-    }
-    
-    const { nombre, email, password, rol } = req.body;
-    
-    // Validar que se proporcionen todos los campos requeridos
-    if (!nombre || !email || !password || !rol) {
-        return res.status(400).json({ message: 'Todos los campos son requeridos' });
-    }
-    
-    // Validar que el rol sea válido
-    if (rol !== 'admin' && rol !== 'staf') {
-        return res.status(400).json({ message: 'Rol no válido. Debe ser "admin" o "staf"' });
-    }
-    
+
+// Cerrar sesión (manejado en el cliente, pero puedes invalidar token si usas blacklist)
+router.post('/logout', verifyToken, (req, res) => {
+    // En un sistema real, podrías agregar el token a una blacklist
+    // Por ahora, el cliente simplemente eliminará el token
+    res.json({ mensaje: 'Sesión cerrada exitosamente' });
+});
+
+// Ruta protegida solo para admin - Ver perfil del admin
+router.get('/admin/perfil', verifyToken, verifyAdmin, async (req, res) => {
     try {
-        // Hashear la contraseña
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const query = 'SELECT id, nombre, email, rol, created_at FROM usuario WHERE id = ?';
+        const [usuarios] = await db.execute(query, [req.user.id]);
+        
+        if (usuarios.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        
+        res.json(usuarios[0]);
+    } catch (error) {
+        console.error('Error al obtener perfil:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Ruta para que admin pueda ver todos los usuarios
+router.get('/admin/usuarios', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const query = `
+            SELECT id, nombre, email, rol, created_at 
+            FROM usuario 
+            ORDER BY created_at DESC
+        `;
+        const [usuarios] = await db.execute(query);
+        
+        res.json(usuarios);
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+// Ruta para que admin pueda crear nuevos usuarios (incluyendo otros admins)
+router.post('/admin/usuarios', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const { nombre, email, password, rol = 'cliente' } = req.body;
+        
+        // Validaciones
+        if (!nombre || !email || !password) {
+            return res.status(400).json({ error: 'Nombre, email y password son requeridos' });
+        }
+        
+        if (!['admin', 'cliente'].includes(rol)) {
+            return res.status(400).json({ error: 'Rol inválido' });
+        }
         
         // Verificar si el email ya existe
-        db.query('SELECT email FROM Usuario WHERE email = ?', [email], (error, results) => {
-            if (error) {
-                return res.status(500).json({ error: error.message });
-            }
-            
-            if (results.length > 0) {
-                return res.status(400).json({ message: 'El email ya está registrado' });
-            }
-            
-            // Insertar el nuevo usuario
-            const query = 'INSERT INTO Usuario (nombre, email, password, rol) VALUES (?, ?, ?, ?)';
-            db.query(query, [nombre, email, passwordHash, rol], (error, results) => {
-                if (error) {
-                    return res.status(500).json({ error: error.message });
-                }
-                
-                res.status(201).json({
-                    success: true,
-                    message: 'Usuario creado exitosamente',
-                    usuarioId: results.insertId
-                });
-            });
+        const checkEmailQuery = 'SELECT id FROM usuario WHERE email = ?';
+        const [existingUsers] = await db.execute(checkEmailQuery, [email]);
+        
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ error: 'El email ya está registrado' });
+        }
+        
+        // Hash del password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        
+        // Insertar nuevo usuario
+        const insertQuery = `
+            INSERT INTO usuario (nombre, email, password, rol) 
+            VALUES (?, ?, ?, ?)
+        `;
+        
+        const [result] = await db.execute(insertQuery, [nombre, email, hashedPassword, rol]);
+        
+        res.status(201).json({
+            mensaje: 'Usuario creado exitosamente',
+            usuarioId: result.insertId,
+            usuario: { nombre, email, rol }
         });
+        
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        console.error('Error al crear usuario:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
 
-// iniciarSesion(): Iniciar sesión y generar token
-router.post('/login', (req, res) => {
-    const { email, password } = req.body;
-    console.log('Intento de login:', { email }); // No logear la contraseña
-    console.log('Intento de login:', { password }); // No logear la contraseña
-
-
-    
-    // Validar que se proporcionen todos los campos requeridos
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email y contraseña son requeridos' });
-    }
-    
-    // Buscar usuario por email
-    db.query('SELECT * FROM Usuario WHERE email = ?', [email], async (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        
-        if (results.length === 0) {
-            return res.status(401).json({ message: 'Credenciales inválidas' });
-        }
-        
-        const usuario = results[0];
-        
-        // Verificar contraseña
-        const passwordValida = await bcrypt.compare(password, usuario.password);
-        console.log('Resultado de verificación de contraseña:', passwordValida);
-        if (!passwordValida) {
-            return res.status(401).json({ message: 'Credenciales inválidas' });
-        }
-        
-        // Generar token
-        const token = jwt.sign(
-            { 
-                id: usuario.idUsuario, 
-                nombre: usuario.nombre, 
-                email: usuario.email, 
-                rol: usuario.rol 
-            }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '8h' }
-        );
-        
-        // Actualizar el token en la base de datos
-        db.query('UPDATE Usuario SET token = ? WHERE idUsuario = ?', [token, usuario.idUsuario], (updateError) => {
-            if (updateError) {
-                return res.status(500).json({ error: updateError.message });
-            }
-            
-            res.json({
-                success: true,
-                message: 'Inicio de sesión exitoso',
-                usuario: {
-                    id: usuario.idUsuario,
-                    nombre: usuario.nombre,
-                    email: usuario.email,
-                    rol: usuario.rol
-                },
-                token: token
-            });
-        });
-    });
-});
-
-// cerrarSesion(): Cerrar sesión (invalidar token)
-router.post('/logout', verificarToken, (req, res) => {
-    // Actualizar a null el token en la base de datos
-    console.log('Cierre sesion');
-    db.query('UPDATE Usuario SET token = NULL WHERE idUsuario = ?', [req.usuario.id], (error) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        
-        res.json({
-            success: true,
-            message: 'Sesión cerrada exitosamente'
-        });
-    });
-});
-
-// asignarRol(rol: enum): Cambiar rol de usuario (solo admins)
-router.put('/:id/rol', verificarToken, (req, res) => {
-    // Verificar si el usuario es admin
-    if (req.usuario.rol !== 'admin') {
-        return res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
-    }
-    
-    const usuarioId = req.params.id;
-    const { rol } = req.body;
-    
-    // Validar que se proporcione el rol
-    if (!rol) {
-        return res.status(400).json({ message: 'El rol es requerido' });
-    }
-    
-    // Validar que el rol sea válido
-    if (rol !== 'admin' && rol !== 'staf') {
-        return res.status(400).json({ message: 'Rol no válido. Debe ser "admin" o "staf"' });
-    }
-    
-    // Actualizar el rol
-    db.query('UPDATE Usuario SET rol = ? WHERE idUsuario = ?', [rol, usuarioId], (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-        
-        res.json({
-            success: true,
-            message: 'Rol actualizado exitosamente'
-        });
-    });
-});
-
-// Actualizar datos de usuario
-router.put('/:id', verificarToken, async (req, res) => {
-    const usuarioId = req.params.id;
-    const datos = { ...req.body };
-    
-    // Verificar que el usuario solo pueda modificar sus propios datos o sea admin
-    if (req.usuario.id != usuarioId && req.usuario.rol !== 'admin') {
-        return res.status(403).json({ message: 'No tienes permiso para modificar este usuario' });
-    }
-    
-    // Si se intenta cambiar la contraseña, hashearla
-    if (datos.password) {
-        try {
-            const salt = await bcrypt.genSalt(10);
-            datos.password = await bcrypt.hash(datos.password, salt);
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    }
-    
-    // No permitir cambiar el rol a través de esta ruta
-    delete datos.rol;
-    
-    // Verificar que se proporcionen datos para actualizar
-    const campos = Object.keys(datos);
-    if (campos.length === 0) {
-        return res.status(400).json({ message: 'No se proporcionaron datos para actualizar' });
-    }
-    
-    // Construir consulta dinámica
-    const setClause = campos.map(campo => `${campo} = ?`).join(', ');
-    const valores = Object.values(datos);
-    
-    const query = `UPDATE Usuario SET ${setClause} WHERE idUsuario = ?`;
-    valores.push(usuarioId);
-    
-    db.query(query, valores, (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-        
-        res.json({
-            success: true,
-            message: 'Datos de usuario actualizados correctamente'
-        });
-    });
-});
-
-// Eliminar usuario (solo admin)
-router.delete('/:id', verificarToken, (req, res) => {
-    // Verificar si el usuario es admin
-    if (req.usuario.rol !== 'admin') {
-        return res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
-    }
-    
-    const usuarioId = req.params.id;
-    
-    // No permitir eliminar al propio usuario
-    if (req.usuario.id == usuarioId) {
-        return res.status(400).json({ message: 'No puedes eliminar tu propio usuario' });
-    }
-    
-    db.query('DELETE FROM Usuario WHERE idUsuario = ?', [usuarioId], (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-        
-        res.json({
-            success: true,
-            message: 'Usuario eliminado exitosamente'
-        });
-    });
-});
-
-// Ruta pública para login
-router.post('/login', (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username y password son requeridos' });
-    }
-
-    db.query('SELECT * FROM Usuario WHERE email = ?', [username], async (error, results) => {
-        if (error) return res.status(500).json({ error: error.message });
-
-        if (results.length === 0) {
-            return res.status(401).json({ message: 'Credenciales inválidas' });
-        }
-
-        const usuario = results[0];
-
-        const passwordMatch = await bcrypt.compare(password, usuario.password);
-
-        if (!passwordMatch) {
-            return res.status(401).json({ message: 'Credenciales inválidas' });
-        }
-
-        const token = jwt.sign(
-            { id: usuario.idUsuario, rol: usuario.rol },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        );
-
-        res.json({
-            token,
-            rol: usuario.rol,
-            nombre: usuario.nombre,
-        });
+// Verificar token (para validar desde el cliente)
+router.get('/verify', verifyToken, (req, res) => {
+    res.json({
+        valido: true,
+        usuario: req.user
     });
 });
 
