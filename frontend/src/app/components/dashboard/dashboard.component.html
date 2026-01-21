@@ -1,0 +1,64 @@
+<div class="dashboard">
+
+  <!-- Cards resumen -->
+  <div class="cards">
+    <div class="card">
+      <h3>Ventas Totales</h3>
+      <p>Q {{ resumen.totalVentas | number:'1.2-2' }}</p>
+    </div>
+
+    <div class="card">
+      <h3>Pedidos Pendientes</h3>
+      <p>{{ resumen.pedidosPendientes }}</p>
+    </div>
+
+    <div class="card">
+      <h3>Stock Bajo</h3>
+      <p>{{ resumen.productosStockBajo }}</p>
+    </div>
+
+    <div class="card">
+      <h3>Clientes</h3>
+      <p>{{ resumen.totalClientes }}</p>
+    </div>
+  </div>
+
+  <!-- Ventas mensuales -->
+  <div class="section">
+    <h2>Ventas Mensuales</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let v of ventasMensuales">
+          <td>{{ v.mes }}</td>
+          <td>Q {{ v.total | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Productos más vendidos -->
+  <div class="section">
+    <h2>Productos Más Vendidos</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad Vendida</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of productosMasVendidos">
+          <td>{{ p.nombre }}</td>
+          <td>{{ p.totalVendido }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

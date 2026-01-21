@@ -1,0 +1,49 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <div class="sidebar">
+    <!-- Encabezado CON NUEVO LOGO -->
+    <div class="sidebar-header">
+      <div class="logo-container">
+        <!-- Imagen con fallback incorporado -->
+        <img 
+          [src]="logoImagePath" 
+          (error)="logoImagePath = logoFallback"
+          class="logo" 
+          alt="Panel Administrativo" />
+      </div>
+      <div class="logo-text">
+        <h2>Panel administrativo</h2>
+      </div>
+    </div>
+
+    <!-- Menú CON NUEVO DISEÑO -->
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a routerLink="/Dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <i class="fas fa-home"></i><span>Dashboard</span></a></li>
+
+        <li><a routerLink="/Ventas" routerLinkActive="active">
+          <i class="fas fa-chart-line"></i><span>Ventas</span></a></li>
+
+        <li><a routerLink="/productos" routerLinkActive="active">
+          <i class="fas fa-box"></i><span>Productos</span></a></li>
+
+        <li><a routerLink="/inventario" routerLinkActive="active">
+          <i class="fas fa-warehouse"></i><span>Inventario</span></a></li>
+
+        <li><a routerLink="/clientes" routerLinkActive="active">
+          <i class="fas fa-users"></i><span>Clientes</span></a></li>
+
+        <li><a routerLink="/reportes" routerLinkActive="active">
+          <i class="fas fa-file-alt"></i><span>Reportes</span></a></li>
+      </ul>
+    </nav>
+
+    <!-- Botón abajo CON NUEVO DISEÑO -->
+    <div class="sidebar-bottom">
+      <button type="button" (click)="logout()" class="logout-btn">
+        <i class="fas fa-right-from-bracket"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
+</ng-container>
