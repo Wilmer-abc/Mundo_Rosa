@@ -4,6 +4,7 @@ COMANDOS PARA INSTALAR EN BACKEND
 2== npm install express cors pg dotenv
 3== npm install --save-dev nodemon
 4== npm install mysql2
+5== npm install bcryptjs
 
 
 
