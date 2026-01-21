@@ -22,30 +22,28 @@ export class LoginComponent {
     private router: Router
   ) {}
 
+  
+
   onSubmit(): void {
     this.loading = true;
     this.error = '';
-    
+
     if (!this.email || !this.password) {
       this.error = 'Por favor ingrese email y contraseña';
       this.loading = false;
       return;
     }
-    
+
     this.authService.login(this.email, this.password).subscribe({
-      next: (response) => {
+      next: () => {
         this.loading = false;
-        if (response.success) {
-          // Redirigir al dashboard en lugar de a participantes
-          this.router.navigate(['/dashboard']);
-        } else {
-          this.error = response.message || 'Error al iniciar sesión';
-        }
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.message || 'Error al iniciar sesión';
+        this.error = err.error?.message || 'Credenciales inválidas';
       }
     });
   }
+
 }
