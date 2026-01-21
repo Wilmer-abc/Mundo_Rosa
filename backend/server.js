@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 
 // Importar rutas
+const usuarioRoutes = require('./src/routes/usuario.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // Rutas publicas
+app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 
