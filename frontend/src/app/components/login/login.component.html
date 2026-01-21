@@ -1,10 +1,15 @@
+<!-- login.component.html -->
 <div class="login-card">
   <div class="logo-container">
-    <div class="logo">S25</div>
+    <div class="logo-container-inner">
+      <div class="logo-inner">
+        <!-- Reemplaza 'tu-imagen.png' con la ruta de tu imagen -->
+        <img src="assets/images/rosaa.png" class="logo-image">
+      </div>
+    </div>
   </div>
   
-  <h2>Simposio 25</h2>
-  <p class="subtitle">Panel de Administración</p>
+  <h2>Bienbenido a Mundo Rosa</h2>
   
   <form (ngSubmit)="onSubmit()">
     <div class="form-group">
@@ -15,7 +20,7 @@
         name="email" 
         [(ngModel)]="email" 
         required
-        placeholder="Ingrese su usuario"
+        placeholder="admin@rosa.com"
       >
     </div>
     
@@ -27,20 +32,23 @@
         name="password" 
         [(ngModel)]="password" 
         required
-        placeholder="Ingrese su contraseña"
+        placeholder="••••••••"
       >
     </div>
     
     <div *ngIf="error" class="error-message">
-      {{ error }}
+      <i class="fas fa-exclamation-circle"></i> {{ error }}
     </div>
     
     <button type="submit" [disabled]="loading" class="login-btn">
+      <i class="fas fa-sign-in-alt" *ngIf="!loading"></i>
       {{ loading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
     </button>
   </form>
   
   <div class="forgot-password">
-    <a href="#">¿Olvidó su contraseña?</a>
+    <a href="#">
+      <i class="fas fa-key"></i> ¿Olvidó su contraseña?
+    </a>
   </div>
 </div>
