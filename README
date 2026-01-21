@@ -1,0 +1,13 @@
+PASOS Y COMANDOS PARA NODE.JS
+COMANDOS PARA INSTALAR EN BACKEND 
+1== npm init -y
+2== npm install express cors pg dotenv
+3== npm install --save-dev nodemon
+4== npm install mysql2
+
+
+
+
+PASOS Y COMANDOS PARA INSTALAR FRONTEND
+1== npm install -g @angular/cli
+2== ng new frontend
