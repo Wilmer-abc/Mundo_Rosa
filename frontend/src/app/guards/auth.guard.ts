@@ -49,8 +49,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
         
         // Si la ruta requiere rol de staff
         if (route.data['roles'] && route.data['roles'].includes('staf')) {
-          const isStaff = this.authService.isStaff();
-          if (!isStaff) {
+          const isStaff = this.authService.isCliente();          if (!isStaff) {
             this.router.navigate(['/acceso-denegado']);
             return false;
           }
