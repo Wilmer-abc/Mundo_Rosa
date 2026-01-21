@@ -9,15 +9,15 @@ export interface Usuario {
   nombre: string;
   email: string;
   password?: string;
-  rol: 'admin' | 'staf';
+  rol: 'admin' | 'cliente';
 }
 
 export interface LoginResponse {
-  success: boolean;
-  message: string;
+  mensaje: string;
   usuario: Usuario;
   token: string;
 }
+
 
 @Injectable({
   providedIn: 'root'
@@ -56,7 +56,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password })
       .pipe(
         tap(response => {
-          if (response.success && response.token && this.isBrowser) {
+          if (response.token && this.isBrowser) {
             localStorage.setItem(this.tokenKey, response.token);
             localStorage.setItem(this.userKey, JSON.stringify(response.usuario));
 
@@ -66,6 +66,7 @@ export class AuthService {
         })
       );
   }
+
 
   logout(): Observable<any> {
     return this.http.post(`${this.apiUrl}/logout`, {})
@@ -120,10 +121,11 @@ export class AuthService {
     return !!user && user.rol === 'admin';
   }
 
-  isStaff(): boolean {
+  isCliente(): boolean {
     const user = this.currentUserSubject.value;
-    return !!user && (user.rol === 'staf' || user.rol === 'admin');
+    return !!user && user.rol === 'cliente';
   }
+
 
   /* ================== USERS ================== */
 
@@ -135,7 +137,7 @@ export class AuthService {
     return this.http.put(`${this.apiUrl}/${id}`, userData);
   }
 
-  changeUserRole(id: number, rol: 'admin' | 'staf'): Observable<any> {
+  changeUserRole(id: number, rol: 'admin' | 'cliente'): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}/rol`, { rol });
   }
 
