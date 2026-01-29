@@ -13,7 +13,7 @@ export const routes: Routes = [
         path: 'dashboard', 
         component: DashboardComponent,
         canActivate: [AuthGuard],
-        data: { roles: ['admin', 'staf'] }
+        data: { roles: ['admin', 'cliente'] }
     },
 ];
  

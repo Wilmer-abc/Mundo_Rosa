@@ -61,7 +61,9 @@ export class AuthService {
             localStorage.setItem(this.userKey, JSON.stringify(response.usuario));
 
             this.isAuthenticatedSubject.next(true);
+            response.usuario.rol = response.usuario.rol.trim().toLowerCase() as 'admin' | 'cliente';   
             this.currentUserSubject.next(response.usuario);
+
           }
         })
       );

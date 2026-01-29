@@ -69,6 +69,7 @@ router.post('/login', (req, res) => {
     );
 
     const { password: _, ...usuarioSinPassword } = usuario;
+    usuarioSinPassword.rol = usuarioSinPassword.rol.trim().toLowerCase();
 
     res.json({
       token,

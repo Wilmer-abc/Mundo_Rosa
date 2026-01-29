@@ -8,36 +8,48 @@ const verifyToken = (req, res, next) => {
     }
     
     try {
-        // Remover el prefijo 'Bearer ' si existe
+        // Remover 'Bearer ' si existe
         const tokenValue = token.startsWith('Bearer ') ? token.slice(7) : token;
+
         const decoded = jwt.verify(tokenValue, process.env.JWT_SECRET);
         req.usuario = decoded;
+
         next();
     } catch (error) {
-        return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
+        return res.status(401).json({ 
+            message: 'Token inválido o expirado', 
+            error: error.message 
+        });
     }
 };
 
-// Middleware para verificar rol de administrador
+// Solo admin
 const verifyAdmin = (req, res, next) => {
     if (req.usuario && req.usuario.rol === 'admin') {
         next();
     } else {
-        return res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
+        return res.status(403).json({
+            message: 'Acceso denegado. Se requiere rol de administrador.'
+        });
     }
 };
 
-// Middleware para verificar rol de staff o administrador
-const verifyStaffOrAdmin = (req, res, next) => {
-    if (req.usuario && (req.usuario.rol === 'admin' || req.usuario.rol === 'staf')) {
+// Admin o cliente
+const verifyClienteOrAdmin = (req, res, next) => {
+    if (
+        req.usuario &&
+        (req.usuario.rol === 'admin' || req.usuario.rol === 'cliente')
+    ) {
         next();
     } else {
-        return res.status(403).json({ message: 'Acceso denegado. Se requiere rol de staff o administrador.' });
+        return res.status(403).json({
+            message: 'Acceso denegado. Se requiere rol de cliente o administrador.'
+        });
     }
 };
 
 module.exports = {
     verifyToken,
     verifyAdmin,
-    verifyStaffOrAdmin
+    verifyClienteOrAdmin
 };
