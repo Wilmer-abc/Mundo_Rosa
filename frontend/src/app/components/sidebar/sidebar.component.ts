@@ -2,6 +2,9 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Observable, of } from 'rxjs';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service'; // ajusta ruta
+
 
 @Component({
   selector: 'app-sidebar',
@@ -20,10 +23,13 @@ export class SidebarComponent {
   // Si la imagen no carga, usa Base64 como fallback
   logoFallback: string = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzE4XzM1XzApIi8+CjxwYXRoIGQ9Ik0xMCAxMEgyMlYyMkgxMFYxMFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xNiAxMkwyMCAxNkgxNlYyMEwxMiAxNkwxNiAxMloiIGZpbGw9IiMwRUE1RTkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQwX2xpbmVhcl8xOF8zNV8wIiB4MT0iMCIgeTE9IjAiIHgyPSIzMiIgeTI9IjMyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiMxRUE1RTkiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMUY3M0U1Ii8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+`;
 
-  constructor() {
-    // Verificar si la imagen existe
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {
     this.checkImageExists();
   }
+
 
   private checkImageExists() {
     const img = new Image();
@@ -39,7 +45,12 @@ export class SidebarComponent {
   }
 
   logout() {
-    console.log('Cerrar sesión');
-    // Aquí iría la lógica de logout real
+    const confirmar = confirm('¿Deseas cerrar sesión?');
+
+    if (!confirmar) return;
+
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
+
 }

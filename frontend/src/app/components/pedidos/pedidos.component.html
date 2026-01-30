@@ -1,0 +1,253 @@
+<div class="pedidos-container">
+  <!-- Header -->
+  <div class="header">
+    <h1>Pedidos</h1>
+    <button class="btn-nuevo" (click)="abrirModalNuevo()">
+      <span>+</span> Nuevo Pedido
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="loading">
+    Cargando pedidos...
+  </div>
+
+  <!-- Lista de pedidos -->
+  <div *ngIf="!cargando" class="pedidos-list">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Cliente</th>
+            <th>Fecha Pedido</th>
+            <th>Fecha Entrega</th>
+            <th>Estado</th>
+            <th>Total</th>
+            <th>Items</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let pedido of pedidos">
+            <td><strong>{{ pedido.codigo }}</strong></td>
+            <td>{{ pedido.cliente_nombre || 'Cliente ' + pedido.cliente_id }}</td>
+            <td>{{ pedido.fecha_pedido | date:'dd/MM/yyyy' }}</td>
+            <td>{{ pedido.fecha_entrega | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="estado-badge" [style.background]="getEstadoColor(pedido.estado)">
+                {{ getEstadoLabel(pedido.estado) }}
+              </span>
+            </td>
+            <td class="total">Q {{ pedido.total | number:'1.2-2' }}</td>
+            <td>{{ pedido.total_items }}</td>
+            <td class="acciones">
+              <button class="btn-detalle" (click)="verDetalle(pedido)">Ver</button>
+              <select 
+                class="select-estado" 
+                [value]="pedido.estado"
+                (change)="actualizarEstado(pedido, $any($event.target).value)"
+              >
+                <option *ngFor="let estado of estados" [value]="estado.value">
+                  {{ estado.label }}
+                </option>
+              </select>
+              <button class="btn-eliminar" (click)="eliminarPedido(pedido.id)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Detalle Pedido -->
+  <div *ngIf="mostrarModalDetalle && pedidoSeleccionado" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Detalle del Pedido</h2>
+        <button class="btn-cerrar" (click)="mostrarModalDetalle = false">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="pedido-info">
+          <div class="info-item">
+            <label>Código:</label>
+            <span>{{ pedidoSeleccionado.codigo }}</span>
+          </div>
+          <div class="info-item">
+            <label>Cliente:</label>
+            <span>{{ pedidoSeleccionado.cliente_nombre || 'Cliente ' + pedidoSeleccionado.cliente_id }}</span>
+          </div>
+          <div class="info-item">
+            <label>Estado:</label>
+            <span class="estado-badge" [style.background]="getEstadoColor(pedidoSeleccionado.estado)">
+              {{ getEstadoLabel(pedidoSeleccionado.estado) }}
+            </span>
+          </div>
+          <div class="info-item">
+            <label>Fecha Pedido:</label>
+            <span>{{ pedidoSeleccionado.fecha_pedido | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Fecha Entrega:</label>
+            <span>{{ pedidoSeleccionado.fecha_entrega | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Notas:</label>
+            <span>{{ pedidoSeleccionado.notas || 'Sin notas' }}</span>
+          </div>
+        </div>
+
+        <h3>Productos</h3>
+        <div class="productos-list">
+          <div *ngFor="let detalle of pedidoSeleccionado.detalles" class="producto-item">
+            <div class="producto-imagenes" *ngIf="detalle.producto_imagenes && detalle.producto_imagenes.length > 0">
+              <img 
+                *ngFor="let imagen of detalle.producto_imagenes.slice(0, 4)" 
+                [src]="imagen" 
+                [alt]="detalle.producto_nombre"
+                class="producto-miniatura"
+              >
+            </div>
+            <div class="producto-info">
+              <h4>{{ detalle.producto_nombre || 'Producto ' + detalle.producto_id }}</h4>
+              <div class="producto-detalles">
+                <span>Cantidad: {{ detalle.cantidad }}</span>
+                <span>Precio: Q {{ detalle.precio | number:'1.2-2' }}</span>
+                <span>Subtotal: Q {{ (detalle.cantidad * detalle.precio) | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="total-pedido">
+          <strong>Total: Q {{ pedidoSeleccionado.total | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nuevo Pedido -->
+  <div *ngIf="mostrarModalNuevo" class="modal-overlay">
+    <div class="modal modal-grande">
+      <div class="modal-header">
+        <h2>Nuevo Pedido</h2>
+        <button class="btn-cerrar" (click)="mostrarModalNuevo = false">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>ID Cliente:</label>
+          <input 
+            type="number" 
+            [(ngModel)]="clienteIdInput"
+            (change)="actualizarClienteId()"
+            placeholder="Ingrese ID del cliente"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Fecha de Entrega:</label>
+          <input 
+            type="date" 
+            [(ngModel)]="nuevoPedido.fecha_entrega"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Estado:</label>
+          <select [(ngModel)]="nuevoPedido.estado">
+            <option *ngFor="let estado of estados" [value]="estado.value">
+              {{ estado.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Notas:</label>
+          <textarea 
+            [(ngModel)]="nuevoPedido.notas" 
+            placeholder="Notas adicionales..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <h3>Agregar Productos</h3>
+        <div class="agregar-producto">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Producto:</label>
+              <select 
+                [(ngModel)]="detalleActual.producto_id"
+                (change)="onProductoSeleccionado()"
+              >
+                <option value="0">Seleccionar producto</option>
+                <option *ngFor="let producto of productos" [value]="producto.id">
+                  {{ producto.nombre }} (Stock: {{ producto.stock }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Cantidad:</label>
+              <input 
+                type="number" 
+                [(ngModel)]="detalleActual.cantidad"
+                min="1"
+                [max]="obtenerStockSeleccionado()"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Precio:</label>
+              <input 
+                type="number" 
+                [(ngModel)]="detalleActual.precio"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <button class="btn-agregar" (click)="agregarProducto()">
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <h3>Productos en el Pedido</h3>
+        <div *ngIf="nuevoPedido.detalles.length === 0" class="lista-vacia">
+          No hay productos agregados
+        </div>
+        
+        <div *ngIf="nuevoPedido.detalles.length > 0" class="productos-agregados">
+          <div *ngFor="let detalle of nuevoPedido.detalles; let i = index" class="producto-agregado">
+            <div class="producto-info">
+              <strong>{{ obtenerProductoNombre(detalle.producto_id) }}</strong>
+              <div class="detalles">
+                <span>Cantidad: {{ detalle.cantidad }}</span>
+                <span>Precio: Q {{ detalle.precio | number:'1.2-2' }}</span>
+                <span>Subtotal: Q {{ (detalle.cantidad * detalle.precio) | number:'1.2-2' }}</span>
+              </div>
+            </div>
+            <button class="btn-eliminar" (click)="eliminarDetalle(i)">Eliminar</button>
+          </div>
+        </div>
+
+        <div class="total-section">
+          <h4>Total: Q {{ calcularTotal() | number:'1.2-2' }}</h4>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-cancelar" (click)="mostrarModalNuevo = false">
+            Cancelar
+          </button>
+          <button 
+            class="btn-crear" 
+            (click)="crearPedido()"
+            [disabled]="nuevoPedido.detalles.length === 0"
+          >
+            Crear Pedido
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

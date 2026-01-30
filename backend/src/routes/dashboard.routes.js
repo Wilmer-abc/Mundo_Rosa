@@ -68,6 +68,31 @@ router.get('/ventas-mensuales', async (req, res) => {
   }
 });
 
+// dashboard.routes.js - Endpoint adicional
+router.get('/ventas-ultimos-meses', async (req, res) => {
+  try {
+    const meses = parseInt(req.query.meses) || 6;
+    
+    const [rows] = await db.query(`
+      SELECT 
+        DATE_FORMAT(fecha, '%Y-%m') AS periodo,
+        MONTH(fecha) AS mes,
+        YEAR(fecha) AS año,
+        SUM(total) AS total
+      FROM ventas
+      WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+      GROUP BY DATE_FORMAT(fecha, '%Y-%m'), MONTH(fecha), YEAR(fecha)
+      ORDER BY periodo DESC
+      LIMIT ?
+    `, [meses, meses]);
+
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener ventas de los últimos meses' });
+  }
+});
+
 /**
  * GET /api/dashboard/productos-mas-vendidos
  */

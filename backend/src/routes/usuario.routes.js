@@ -31,20 +31,16 @@ const verifyAdmin = (req, res, next) => {
 };
 
 // Iniciar sesión (para admin y cliente)
-router.post('/login', (req, res) => {
-  const { email, password } = req.body;
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email y password son requeridos' });
-  }
-
-  const query = 'SELECT * FROM usuario WHERE email = ?';
-
-  db.query(query, [email], async (error, usuarios) => {
-    if (error) {
-      console.error('Error DB:', error);
-      return res.status(500).json({ error: 'Error en base de datos' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y password son requeridos' });
     }
+
+    const query = 'SELECT * FROM usuario WHERE email = ?';
+    const [usuarios] = await db.query(query, [email]);
 
     if (usuarios.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -75,8 +71,13 @@ router.post('/login', (req, res) => {
       token,
       usuario: usuarioSinPassword
     });
-  });
+
+  } catch (error) {
+    console.error('Error login:', error);
+    res.status(500).json({ error: 'Error en servidor' });
+  }
 });
+
 
 
 // Cerrar sesión (manejado en el cliente, pero puedes invalidar token si usas blacklist)

@@ -1,8 +1,10 @@
 .dashboard {
   padding: 24px;
   background: #f8fafc;
-  min-height: 100vh;
+  min-height: 100%;
+  box-sizing: border-box;
 }
+
 
 /* Cards */
 .cards {

@@ -1,48 +1,116 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+
+// Temporary interfaces until service is created
+interface DashboardResumen {
+  totalVentas: number;
+  pedidosPendientes: number;
+  productosStockBajo: number;
+  totalClientes: number;
+}
+
+interface VentaMensual {
+  mes: number;
+  total: number;
+}
+
+interface ProductoMasVendido {
+  nombre: string;
+  cantidad: number;
+}
+
+// Temporary service placeholder
+@Injectable({
+  providedIn: 'root'
+})
+class DashboardService {
+  getDashboardData(): Observable<any> {
+    return of({
+      resumen: {
+        totalVentas: 0,
+        pedidosPendientes: 0,
+        productosStockBajo: 0,
+        totalClientes: 0
+      },
+      ventasMensuales: [],
+      productosMasVendidos: []
+    });
+  }
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-
-  resumen = {
+  resumen: DashboardResumen = {
     totalVentas: 0,
     pedidosPendientes: 0,
     productosStockBajo: 0,
     totalClientes: 0
   };
 
-  ventasMensuales: any[] = [];
-  productosMasVendidos: any[] = [];
+  ventasMensuales: VentaMensual[] = [];
+  productosMasVendidos: ProductoMasVendido[] = [];
+  loading = false;
+  error: string | null = null;
 
-  private apiUrl = 'http://localhost:3000/api/dashboard';
-
-  constructor(private http: HttpClient) {}
+  constructor(private dashboardService: DashboardService) {}
 
   ngOnInit(): void {
-    this.cargarResumen();
-    this.cargarVentasMensuales();
-    this.cargarProductosMasVendidos();
+    this.cargarDashboard();
   }
 
-  cargarResumen() {
-    this.http.get<any>(`${this.apiUrl}/resumen`)
-      .subscribe(data => this.resumen = data);
+  cargarDashboard(): void {
+    this.loading = true;
+    this.error = null;
+
+    this.dashboardService.getDashboardData()
+      .pipe(
+        catchError(error => {
+          console.error('Error cargando dashboard:', error);
+          this.error = 'Error al cargar los datos del dashboard';
+          return of({
+            resumen: this.resumen,
+            ventasMensuales: [],
+            productosMasVendidos: []
+          });
+        }),
+        finalize(() => this.loading = false)
+      )
+      .subscribe((data: { resumen: DashboardResumen; ventasMensuales: VentaMensual[]; productosMasVendidos: ProductoMasVendido[] }) => {
+        this.resumen = data.resumen;
+        this.ventasMensuales = this.formatearMeses(data.ventasMensuales);
+        this.productosMasVendidos = data.productosMasVendidos;
+      });
   }
 
-  cargarVentasMensuales() {
-    this.http.get<any[]>(`${this.apiUrl}/ventas-mensuales`)
-      .subscribe(data => this.ventasMensuales = data);
+  /**
+   * Formatea los números de mes a nombres de mes
+   */
+  formatearMeses(ventasMensuales: VentaMensual[]): any[] {
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    return ventasMensuales.map(venta => ({
+      ...venta,
+      mes: meses[venta.mes - 1] || `Mes ${venta.mes}`
+    }));
   }
 
-  cargarProductosMasVendidos() {
-    this.http.get<any[]>(`${this.apiUrl}/productos-mas-vendidos`)
-      .subscribe(data => this.productosMasVendidos = data);
+  /**
+   * Refresca los datos del dashboard
+   */
+  refrescar(): void {
+    this.cargarDashboard();
   }
 }
