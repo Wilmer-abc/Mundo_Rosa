@@ -7,6 +7,7 @@ const cors = require('cors');
 const usuarioRoutes = require('./src/routes/usuario.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
 const pedidosRoutes = require('./src/routes/pedidos.routes');
+const productosRoutes = require('./src/routes/productos.routes');
 
 const app = express();
 
@@ -24,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pedidos', pedidosRoutes);
-
+app.use('/api/productos', productosRoutes);
 
 // 404 JSON para /api/*
 app.use((req, res, next) => {
