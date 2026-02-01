@@ -1,0 +1,337 @@
+<div class="producto-container">
+  <div class="row">
+    <!-- Formulario de Producto -->
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="form-header">
+          <h4>
+            <i class="bi bi-box-seam"></i>
+            {{ productoEditando ? 'Editar Producto' : 'Nuevo Producto' }}
+          </h4>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="productoForm" (ngSubmit)="onSubmit()">
+            <div class="form-grid">
+              <!-- Sección 1: Información Básica -->
+              <div class="form-section">
+                <h5><i class="bi bi-info-circle"></i> Información Básica</h5>
+                
+                <!-- Nombre del Producto -->
+                <div class="mb-4">
+                  <label for="nombre" class="form-label required">NOMBRE DEL PRODUCTO</label>
+                  <input
+                    type="text"
+                    id="nombre"
+                    formControlName="nombre"
+                    class="form-control"
+                    placeholder="Ej: Taladro Eléctrico Profesional"
+                    [class.is-invalid]="productoForm.get('nombre')?.invalid && productoForm.get('nombre')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="productoForm.get('nombre')?.errors?.['required']">
+                    El nombre del producto es requerido
+                  </div>
+                  <div class="invalid-feedback" *ngIf="productoForm.get('nombre')?.errors?.['maxlength']">
+                    El nombre no puede exceder los 150 caracteres
+                  </div>
+                </div>
+
+                <!-- Categoría (Nuevo campo) -->
+                <div class="mb-4">
+                  <label for="categoria" class="form-label required">CATEGORÍA</label>
+                  <input
+                    type="text"
+                    id="categoria"
+                    formControlName="categoria"
+                    class="form-control"
+                    placeholder="Ej: Equipos eléctricos"
+                  >
+                  <div class="form-text">Selecciona o escribe la categoría del producto</div>
+                </div>
+
+                <!-- Cantidad (Stock) -->
+                <div class="mb-4">
+                  <label for="stock" class="form-label required">CANTIDAD (STOCK)</label>
+                  <input
+                    type="number"
+                    id="stock"
+                    formControlName="stock"
+                    class="form-control"
+                    min="0"
+                    placeholder="30"
+                    [class.is-invalid]="productoForm.get('stock')?.invalid && productoForm.get('stock')?.touched"
+                  >
+                  <div class="invalid-feedback" *ngIf="productoForm.get('stock')?.errors?.['required']">
+                    La cantidad en stock es requerida
+                  </div>
+                  <div class="invalid-feedback" *ngIf="productoForm.get('stock')?.errors?.['min']">
+                    El stock no puede ser negativo
+                  </div>
+                </div>
+
+                <!-- Marca/Color -->
+                <div class="mb-4">
+                  <label for="marca" class="form-label">MARCA / COLOR</label>
+                  <input
+                    type="text"
+                    id="marca"
+                    formControlName="marca"
+                    class="form-control"
+                    placeholder="Ej: Whalt, amarillo"
+                  >
+                </div>
+              </div>
+
+              <!-- Sección 2: Precios -->
+              <div class="form-section">
+                <h5><i class="bi bi-tag"></i> Información de Precios</h5>
+                
+                <div class="price-group">
+                  <!-- Precio Compra -->
+                  <div class="mb-4 price-input price-compra">
+                    <label for="precioCompra" class="form-label required">PRECIO COMPRA</label>
+                    <input
+                      type="number"
+                      id="precioCompra"
+                      formControlName="precioCompra"
+                      class="form-control"
+                      step="0.01"
+                      min="0"
+                      placeholder="10.00"
+                    >
+                    <div class="form-text">Costo de adquisición</div>
+                  </div>
+
+                  <!-- Precio Venta -->
+                  <div class="mb-4 price-input price-venta">
+                    <label for="precioVenta" class="form-label required">PRECIO VENTA</label>
+                    <input
+                      type="number"
+                      id="precioVenta"
+                      formControlName="precioVenta"
+                      class="form-control"
+                      step="0.01"
+                      min="0"
+                      placeholder="40.00"
+                    >
+                    <div class="form-text">Precio normal de venta</div>
+                  </div>
+
+                  <!-- Precio Oferta -->
+                  <div class="mb-4 price-input price-oferta">
+                    <label for="precioOferta" class="form-label">PRECIO OFERTA</label>
+                    <input
+                      type="number"
+                      id="precioOferta"
+                      formControlName="precioOferta"
+                      class="form-control"
+                      step="0.01"
+                      min="0"
+                      placeholder="30.00"
+                    >
+                    <div class="form-text">Precio promocional (opcional)</div>
+                  </div>
+                </div>
+
+                <!-- Etiquetas de Estado -->
+                <div class="mb-4">
+                  <label class="form-label">ETIQUETAS DE ESTADO</label>
+                  <div class="checkbox-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" formControlName="esOferta">
+                      <span>Oferta</span>
+                    </label>
+                    <label class="checkbox-label">
+                      <input type="checkbox" formControlName="esDestacado">
+                      <span>Destacado</span>
+                    </label>
+                    <label class="checkbox-label">
+                      <input type="checkbox" formControlName="esNuevo" checked>
+                      <span>Nuevo</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección 3: Descripción y Características -->
+              <div class="form-section">
+                <h5><i class="bi bi-card-text"></i> Descripción</h5>
+                
+                <!-- Características Destacadas -->
+                <div class="mb-4">
+                  <label for="caracteristicas" class="form-label">CARACTERÍSTICAS DESTACADAS</label>
+                  <textarea
+                    id="caracteristicas"
+                    formControlName="caracteristicas"
+                    class="form-control"
+                    rows="3"
+                    placeholder="• Motor de alta potencia
+• Diseño ergonómico
+• Velocidad variable"
+                  ></textarea>
+                  <div class="form-text">Separar cada característica con un salto de línea</div>
+                </div>
+
+                <!-- Descripción Ampliada -->
+                <div class="mb-4">
+                  <label for="descripcion" class="form-label required">DESCRIPCIÓN AMPLIADA</label>
+                  <textarea
+                    id="descripcion"
+                    formControlName="descripcion"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Descripción detallada del producto, especificaciones técnicas, usos recomendados..."
+                    [class.is-invalid]="productoForm.get('descripcion')?.invalid && productoForm.get('descripcion')?.touched"
+                  ></textarea>
+                  <div class="invalid-feedback" *ngIf="productoForm.get('descripcion')?.errors?.['required']">
+                    La descripción es requerida
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección 4: Imágenes -->
+              <div class="form-section">
+                <h5><i class="bi bi-images"></i> Imágenes del Producto</h5>
+                
+                <div class="image-upload-container">
+                  <div class="form-text mb-3">
+                    Sube hasta {{ maxImages }} imágenes del producto. La primera imagen será la principal.
+                  </div>
+                  
+                  <div class="image-upload-grid">
+                    <!-- Slots de imágenes -->
+                    <div *ngFor="let imagen of imagenesArray.controls; let i = index" class="image-upload-item image-preview">
+                      <div *ngIf="previewImages[i]">
+                        <img 
+                            [src]="
+                              previewImages[i]
+                                ? previewImages[i]
+                                : productoEditando?.imagenes?.[i]
+                                  ? 'http://localhost:3000' + productoEditando.imagenes[i]
+                                  : 'assets/default-product.png'
+                            "
+                            alt="Imagen del producto"
+                          >
+                        <button 
+                          type="button" 
+                          class="remove-btn"
+                          (click)="removeImagenControl(i)"
+                        >
+                          <i class="bi bi-x"></i>
+                        </button>
+                      </div>
+                      <div *ngIf="!previewImages[i]" class="upload-icon">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        (change)="onImagenChange($event, i)"
+                        [class.is-invalid]="imagen.invalid && imagen.touched"
+                      >
+                    </div>
+                    
+                    <!-- Botón para añadir más imágenes -->
+                    <div 
+                      *ngIf="imagenesArray.length < maxImages" 
+                      class="image-upload-item"
+                      (click)="addImagenControl()"
+                    >
+                      <div class="upload-icon">
+                        <i class="bi bi-plus-lg"></i>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="invalid-feedback mt-2" *ngIf="imagenesArray.invalid && imagenesArray.touched">
+                    Por favor, sube al menos una imagen del producto
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="form-actions">
+              <button 
+                type="button" 
+                class="btn btn-secondary"
+                (click)="resetForm()"
+                *ngIf="productoEditando"
+              >
+                <i class="bi bi-x-circle me-2"></i>Cancelar
+              </button>
+              
+              <button 
+                type="submit" 
+                class="btn btn-primary"
+                [disabled]="productoForm.invalid"
+              >
+                <i class="bi bi-check-circle me-2"></i>
+                {{ productoEditando ? 'Actualizar Producto' : 'Guardar Producto' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Productos -->
+    <div class="col-lg-12 mt-4">
+      <div class="products-list">
+        <div class="form-header">
+          <h4><i class="bi bi-list-check me-2"></i>Productos Registrados</h4>
+        </div>
+        
+        <div class="card-body">
+          <div *ngIf="productos.length === 0" class="text-center py-5">
+            <i class="bi bi-box-seam display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">No hay productos registrados</h5>
+            <p class="text-muted">Comienza agregando tu primer producto usando el formulario superior</p>
+          </div>
+          
+          <div *ngFor="let producto of productos" class="product-item">
+            <div class="product-image">
+              <img 
+                [src]="producto.imagenes && producto.imagenes[0] ? producto.imagenes[0] : 'assets/default-product.png'" 
+                alt="{{ producto.nombre }}"
+              >
+            </div>
+            
+            <div class="product-info">
+              <h6>{{ producto.nombre }}</h6>
+              <p>{{ producto.descripcion | slice:0:150 }}{{ producto.descripcion.length > 150 ? '...' : '' }}</p>
+              
+              <div class="product-meta">
+                <span class="badge bg-success">${{ producto.precioVenta || producto.precio }}</span>
+                <span class="badge bg-info">Stock: {{ producto.stock }}</span>
+                <span *ngIf="producto.esNuevo" class="status-badge status-nuevo">
+                  <i class="bi bi-star-fill"></i> Nuevo
+                </span>
+                <span *ngIf="producto.esOferta" class="status-badge status-oferta">
+                  <i class="bi bi-percent"></i> Oferta
+                </span>
+                <span *ngIf="producto.esDestacado" class="status-badge status-destacado">
+                  <i class="bi bi-award-fill"></i> Destacado
+                </span>
+              </div>
+            </div>
+            
+            <div class="product-actions">
+              <button 
+                class="btn btn-outline-primary"
+                (click)="editarProducto(producto)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button 
+                class="btn btn-outline-danger"
+                (click)="eliminarProducto(producto.id)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

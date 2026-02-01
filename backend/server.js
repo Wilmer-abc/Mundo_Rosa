@@ -26,6 +26,8 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/productos', productosRoutes);
+app.use('/uploads', express.static('uploads'));
+
 
 // 404 JSON para /api/*
 app.use((req, res, next) => {
