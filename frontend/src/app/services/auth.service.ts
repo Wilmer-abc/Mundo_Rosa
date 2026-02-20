@@ -18,12 +18,18 @@ export interface LoginResponse {
   token: string;
 }
 
+export interface RecoverPasswordResponse {
+  mensaje: string;
+}
+
+export interface ResetPasswordResponse {
+  mensaje: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-
   private apiUrl = 'http://localhost:3000/api/usuarios';
   private tokenKey = 'auth-token';
   private userKey = 'user-info';
@@ -63,12 +69,10 @@ export class AuthService {
             this.isAuthenticatedSubject.next(true);
             response.usuario.rol = response.usuario.rol.trim().toLowerCase() as 'admin' | 'cliente';   
             this.currentUserSubject.next(response.usuario);
-
           }
         })
       );
   }
-
 
   logout(): Observable<any> {
     return this.http.post(`${this.apiUrl}/logout`, {})
@@ -92,6 +96,36 @@ export class AuthService {
     }
     this.isAuthenticatedSubject.next(false);
     this.currentUserSubject.next(null);
+  }
+
+  /* ================== RECUPERACIÓN DE CONTRASEÑA ================== */
+
+  /**
+   * Solicita recuperación de contraseña enviando un email
+   * @param email Correo electrónico del usuario
+   * @returns Observable con mensaje de confirmación
+   */
+  recoverPassword(email: string): Observable<RecoverPasswordResponse> {
+    return this.http.post<RecoverPasswordResponse>(`${this.apiUrl}/recuperar-password`, { email });
+  }
+
+  /**
+   * Restablece la contraseña usando un token
+   * @param token Token de recuperación
+   * @param newPassword Nueva contraseña
+   * @returns Observable con mensaje de confirmación
+   */
+  resetPassword(token: string, newPassword: string): Observable<ResetPasswordResponse> {
+    return this.http.post<ResetPasswordResponse>(`${this.apiUrl}/reset-password`, { token, newPassword });
+  }
+
+  /**
+   * Verifica si un token de recuperación es válido
+   * @param token Token a verificar
+   * @returns Observable con resultado de la verificación
+   */
+  verifyResetToken(token: string): Observable<{ valido: boolean }> {
+    return this.http.post<{ valido: boolean }>(`${this.apiUrl}/verify-reset-token`, { token });
   }
 
   /* ================== HELPERS ================== */
@@ -127,7 +161,6 @@ export class AuthService {
     const user = this.currentUserSubject.value;
     return !!user && user.rol === 'cliente';
   }
-
 
   /* ================== USERS ================== */
 

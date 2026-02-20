@@ -17,6 +17,8 @@ export class ProductoComponent implements OnInit {
   productoEditando: any = null;
   previewImages: string[] = [];
   maxImages = 4;
+  cargando = true;
+
 
   constructor(
     private fb: FormBuilder,
@@ -93,103 +95,104 @@ export class ProductoComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
-cargarProductos() {
-  this.productoService.getProductos().subscribe({
-    next: (data: any) => {
-      console.log('DATA CRUDA DEL BACKEND:', data);
+  cargarProductos() {
+    this.cargando = true;
 
-      this.productos = data.map((p: any) => {
-        console.log('PRODUCTO INDIVIDUAL:', p);
+    this.productoService.getProductos().subscribe({
+      next: (data: any) => {
+        console.log('RESPUESTA BACKEND:', data);
 
-        return {
+        const lista = Array.isArray(data)
+          ? data
+          : data.productos || data.data || [];
+
+        this.productos = lista.map((p: any) => ({
           ...p,
           esNuevo: p.es_nuevo,
           esOferta: p.es_oferta,
           esDestacado: p.es_destacado,
           precioVenta: p.precio_venta
-        };
-      });
+        }));
 
-      console.log('PRODUCTOS MAPEADOS:', this.productos);
-    },
-    error: (error) => {
-      console.error('Error al cargar productos:', error);
-    }
-  });
-}
-
-
-
-
-onSubmit() {
-  if (this.productoForm.valid) {
-    const formData = new FormData();
-    const formValue = this.productoForm.value;
-    
-    // Agregar campos de texto al FormData
-    formData.append('nombre', formValue.nombre);
-    formData.append('descripcion', formValue.descripcion);
-    formData.append('categoria', formValue.categoria);
-    formData.append('marca', formValue.marca || '');
-
-    formData.append('precio_compra', formValue.precioCompra);
-    formData.append('precio_venta', formValue.precioVenta);
-    formData.append('precio_oferta', formValue.precioOferta || '');
-
-    formData.append('caracteristicas', formValue.caracteristicas || '');
-    formData.append('stock', formValue.stock);
-
-    formData.append('es_nuevo', formValue.esNuevo);
-    formData.append('es_oferta', formValue.esOferta);
-    formData.append('es_destacado', formValue.esDestacado);
-
-    
-    // Agregar imágenes nuevas
-    for (let i = 0; i < this.imagenesArray.length; i++) {
-      const imagen = this.imagenesArray.at(i).value;
-      if (imagen instanceof File) {
-        formData.append('imagenes', imagen, imagen.name);
+        this.cargando = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar productos:', error);
+        this.cargando = false;
       }
-    }
-    
-    // Si estamos editando, enviar las imágenes existentes que se mantienen
-    if (this.productoEditando && this.productoEditando.imagenes) {
-      formData.append('imagenes_existentes', 
-        JSON.stringify(this.productoEditando.imagenes.map((img: string) => img)));
-    }
-    
-    if (this.productoEditando) {
-      // Actualizar producto existente
-      this.productoService.updateProducto(this.productoEditando.id, formData).subscribe({
-        next: (response) => {
-          this.resetForm();
-          this.cargarProductos();
-          alert('Producto actualizado exitosamente');
-        },
-        error: (error) => {
-          console.error('Error al actualizar producto:', error);
-          alert('Error al actualizar el producto');
-        }
-      });
-    } else {
-      // Crear nuevo producto
-      this.productoService.createProducto(formData).subscribe({
-        next: (response) => {
-          this.resetForm();
-          this.cargarProductos();
-          alert('Producto creado exitosamente');
-        },
-        error: (error) => {
-          console.error('Error al crear producto:', error);
-          alert('Error al crear el producto');
-        }
-      });
-    }
-  } else {
-    this.markFormGroupTouched(this.productoForm);
-    alert('Por favor, completa todos los campos requeridos');
+    });
   }
-}
+
+
+  onSubmit() {
+    if (this.productoForm.valid) {
+      const formData = new FormData();
+      const formValue = this.productoForm.value;
+      
+      // Agregar campos de texto al FormData
+      formData.append('nombre', formValue.nombre);
+      formData.append('descripcion', formValue.descripcion);
+      formData.append('categoria', formValue.categoria);
+      formData.append('marca', formValue.marca || '');
+
+      formData.append('precio_compra', formValue.precioCompra);
+      formData.append('precio_venta', formValue.precioVenta);
+      formData.append('precio_oferta', formValue.precioOferta || '');
+
+      formData.append('caracteristicas', formValue.caracteristicas || '');
+      formData.append('stock', formValue.stock);
+
+      formData.append('es_nuevo', formValue.esNuevo);
+      formData.append('es_oferta', formValue.esOferta);
+      formData.append('es_destacado', formValue.esDestacado);
+
+      
+      // Agregar imágenes nuevas
+      for (let i = 0; i < this.imagenesArray.length; i++) {
+        const imagen = this.imagenesArray.at(i).value;
+        if (imagen instanceof File) {
+          formData.append('imagenes', imagen, imagen.name);
+        }
+      }
+      
+      // Si estamos editando, enviar las imágenes existentes que se mantienen
+      if (this.productoEditando && this.productoEditando.imagenes) {
+        formData.append('imagenes_existentes', 
+          JSON.stringify(this.productoEditando.imagenes.map((img: string) => img)));
+      }
+      
+      if (this.productoEditando) {
+        // Actualizar producto existente
+        this.productoService.updateProducto(this.productoEditando.id, formData).subscribe({
+          next: (response) => {
+            this.resetForm();
+            this.cargarProductos();
+            alert('Producto actualizado exitosamente');
+          },
+          error: (error) => {
+            console.error('Error al actualizar producto:', error);
+            alert('Error al actualizar el producto');
+          }
+        });
+      } else {
+        // Crear nuevo producto
+        this.productoService.createProducto(formData).subscribe({
+          next: (response) => {
+            this.resetForm();
+            this.cargarProductos();
+            alert('Producto creado exitosamente');
+          },
+          error: (error) => {
+            console.error('Error al crear producto:', error);
+            alert('Error al crear el producto');
+          }
+        });
+      }
+    } else {
+      this.markFormGroupTouched(this.productoForm);
+      alert('Por favor, completa todos los campos requeridos');
+    }
+  }
 
   prepareFormData(): FormData {
     const formData = new FormData();

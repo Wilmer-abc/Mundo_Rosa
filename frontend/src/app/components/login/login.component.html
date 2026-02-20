@@ -3,13 +3,12 @@
   <div class="logo-container">
     <div class="logo-container-inner">
       <div class="logo-inner">
-        <!-- Reemplaza 'tu-imagen.png' con la ruta de tu imagen -->
         <img src="assets/images/rosaa.png" class="logo-image">
       </div>
     </div>
   </div>
   
-  <h2>Bienbenido a Mundo Rosa</h2>
+  <h2>Bienvenido a Mundo Rosa</h2>
   
   <form (ngSubmit)="onSubmit()">
     <div class="form-group">
@@ -21,19 +20,31 @@
         [(ngModel)]="email" 
         required
         placeholder="admin@rosa.com"
+        [class.error-input]="error && !email"
       >
     </div>
     
-    <div class="form-group">
+    <div class="form-group password-group">
       <label for="password">Contraseña</label>
-      <input 
-        type="password" 
-        id="password" 
-        name="password" 
-        [(ngModel)]="password" 
-        required
-        placeholder="••••••••"
-      >
+      <div class="password-input-wrapper">
+        <input 
+          [type]="showPassword ? 'text' : 'password'" 
+          id="password" 
+          name="password" 
+          [(ngModel)]="password" 
+          required
+          placeholder="••••••••"
+          [class.error-input]="error && !password"
+        >
+        <button 
+          type="button" 
+          class="password-toggle-btn" 
+          (click)="togglePasswordVisibility()"
+          [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        >
+          <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+        </button>
+      </div>
     </div>
     
     <div *ngIf="error" class="error-message">
@@ -47,8 +58,52 @@
   </form>
   
   <div class="forgot-password">
-    <a href="#">
+    <a href="javascript:void(0)" (click)="openRecoveryModal()">
       <i class="fas fa-key"></i> ¿Olvidó su contraseña?
     </a>
+  </div>
+</div>
+
+<!-- Modal de recuperación de contraseña -->
+<div class="modal-overlay" *ngIf="showRecoveryModal" (click)="closeRecoveryModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Recuperar Contraseña</h3>
+      <button class="close-btn" (click)="closeRecoveryModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p>Ingrese su correo electrónico y le enviaremos instrucciones para restablecer su contraseña.</p>
+      
+      <div class="form-group">
+        <label for="recoveryEmail">Correo Electrónico</label>
+        <input 
+          type="email" 
+          id="recoveryEmail" 
+          [(ngModel)]="recoveryEmail" 
+          placeholder="ejemplo@correo.com"
+          [class.error-input]="recoveryMessage && recoveryMessage.includes('Error')"
+        >
+      </div>
+      
+      <div *ngIf="recoveryMessage" class="recovery-message" [class.success]="!recoveryMessage.includes('Error')">
+        <i class="fas" [ngClass]="recoveryMessage.includes('Error') ? 'fa-exclamation-circle' : 'fa-check-circle'"></i>
+        {{ recoveryMessage }}
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeRecoveryModal()">Cancelar</button>
+      <button 
+        class="recover-btn" 
+        (click)="onRecoverPassword()" 
+        [disabled]="recoveryLoading"
+      >
+        <i class="fas fa-paper-plane" *ngIf="!recoveryLoading"></i>
+        {{ recoveryLoading ? 'Enviando...' : 'Enviar Instrucciones' }}
+      </button>
+    </div>
   </div>
 </div>

@@ -6,7 +6,7 @@ COMANDOS PARA INSTALAR EN BACKEND
 4== npm install mysql2
 5== npm install bcryptjs
 6== npm install multer para las imagenes
-
+7== npm install nodemailer crypto
 
 
 PASOS Y COMANDOS PARA INSTALAR FRONTEND

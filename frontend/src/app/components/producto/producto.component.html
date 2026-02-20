@@ -282,54 +282,63 @@
         </div>
         
         <div class="card-body">
-          <div *ngIf="productos.length === 0" class="text-center py-5">
-            <i class="bi bi-box-seam display-1 text-muted mb-3"></i>
-            <h5 class="text-muted">No hay productos registrados</h5>
-            <p class="text-muted">Comienza agregando tu primer producto usando el formulario superior</p>
-          </div>
-          
+        <!-- Cargando -->
+        <div *ngIf="cargando" class="text-center py-5">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-3 text-muted">Cargando productos...</p>
+        </div>
+
+        <!-- Sin productos -->
+        <div *ngIf="!cargando && productos.length === 0" class="text-center py-5">
+          <i class="bi bi-box-seam display-1 text-muted mb-3"></i>
+          <h5 class="text-muted">No hay productos registrados</h5>
+          <p class="text-muted">
+            Comienza agregando tu primer producto usando el formulario superior
+          </p>
+        </div>
+
+        <!-- Lista de productos -->
+        <div *ngIf="!cargando && productos.length > 0">
           <div *ngFor="let producto of productos" class="product-item">
             <div class="product-image">
-              <img 
-                [src]="producto.imagenes && producto.imagenes[0] ? producto.imagenes[0] : 'assets/default-product.png'" 
-                alt="{{ producto.nombre }}"
+              <img
+                [src]="producto.imagenes?.length
+                  ? 'http://localhost:3000' + producto.imagenes[0]
+                  : 'assets/default-product.png'"
+                [alt]="producto.nombre"
               >
             </div>
-            
+
             <div class="product-info">
               <h6>{{ producto.nombre }}</h6>
-              <p>{{ producto.descripcion | slice:0:150 }}{{ producto.descripcion.length > 150 ? '...' : '' }}</p>
-              
+              <p>
+                {{ producto.descripcion | slice:0:150 }}
+                {{ producto.descripcion.length > 150 ? '...' : '' }}
+              </p>
+
               <div class="product-meta">
-                <span class="badge bg-success">${{ producto.precioVenta || producto.precio }}</span>
-                <span class="badge bg-info">Stock: {{ producto.stock }}</span>
-                <span *ngIf="producto.esNuevo" class="status-badge status-nuevo">
-                  <i class="bi bi-star-fill"></i> Nuevo
+                <span class="badge bg-success">
+                  ${{ producto.precioVenta }}
                 </span>
-                <span *ngIf="producto.esOferta" class="status-badge status-oferta">
-                  <i class="bi bi-percent"></i> Oferta
-                </span>
-                <span *ngIf="producto.esDestacado" class="status-badge status-destacado">
-                  <i class="bi bi-award-fill"></i> Destacado
+                <span class="badge bg-info">
+                  Stock: {{ producto.stock }}
                 </span>
               </div>
             </div>
-            
+
             <div class="product-actions">
-              <button 
-                class="btn btn-outline-primary"
-                (click)="editarProducto(producto)"
-              >
+              <button class="btn btn-outline-primary"
+                      (click)="editarProducto(producto)">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button 
-                class="btn btn-outline-danger"
-                (click)="eliminarProducto(producto.id)"
-              >
+
+              <button class="btn btn-outline-danger"
+                      (click)="eliminarProducto(producto.id)">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
